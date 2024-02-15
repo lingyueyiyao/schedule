@@ -3,6 +3,7 @@ package room
 import (
 	"context"
 	"errors"
+	"time"
 )
 
 var (
@@ -20,12 +21,13 @@ const (
 var Rooms map[int]*room
 
 type room struct {
-	roomType TypeRoom
-	number   int
-	capacity int
-	useTime  int
-	timeCtx  context.Context
-	empty    bool
+	roomType   TypeRoom
+	number     int
+	capacity   int
+	useTime    int
+	timeCtx    context.Context
+	timeCancel context.CancelFunc
+	empty      bool
 }
 
 func NewRoom(n int, c int, t TypeRoom) *room {
@@ -33,7 +35,7 @@ func NewRoom(n int, c int, t TypeRoom) *room {
 		roomType: t,
 		number:   n,
 		capacity: c,
-		empty: true,
+		empty:    true,
 	}
 }
 
@@ -70,6 +72,27 @@ func (r *room) GetUseTime() int {
 
 func (r *room) AddUseTime(n int) {
 	r.useTime += n
+}
+
+func (r *room) StartTimer() {
+	ctx, cancel := context.WithCancel(context.Background())
+	r.timeCtx = ctx
+	r.timeCancel = cancel
+
+	go func() {
+		for {
+			select {
+			case <-time.After(60 * time.Second):
+				r.useTime++
+			case <-r.timeCtx.Done():
+				return
+			}
+		}
+	}()
+}
+
+func (r *room) CancelTimer() {
+	r.timeCancel()
 }
 
 func init() {

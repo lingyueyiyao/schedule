@@ -30,6 +30,7 @@ func (r *Record) SetOccupy(n int) {
 func (r *Record) SetIdle(n int) {
 	r.idleMu.Lock()
 	defer r.idleMu.Unlock()
+	Rooms[n].CancelTimer()
 	r.idleRoom[n] = Rooms[n]
 	Rooms[n].empty = true
 }
@@ -57,4 +58,5 @@ func (r *Record) GetIdle() map[int]*room {
 func (r *Record) DispatchIdleRoom(n int) {
 	r.DelIdle(n)
 	r.SetOccupy(n)
+	Rooms[n].StartTimer()
 }
